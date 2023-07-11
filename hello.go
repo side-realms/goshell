@@ -14,26 +14,49 @@ func ChangeDirectory(inputs []string) error {
 	if len(inputs) < 2 {
 		return errors.New("Add path!")
 	}
-	return os.Chdir(inputs[1])
+	os.Chdir(inputs[1])
+	dir, err := os.Getwd()
+	fmt.Println("\x1b[32m", "(　³ω³ )< "+dir)
+	return err
 }
 
-func SuperUser(inputs []string) {
+func SuperUser(inputs []string) error {
 	cmd := exec.Command("su")
-	cmd.Stdin = strings.NewReader("ubuntu" + "\n")
-	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
 
-	err := cmd.Run()
+	out, err := cmd.Output()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Err", err)
+	} else {
+		if string(out) == "" {
+			fmt.Println("OUT:success")
+		} else {
+			fmt.Println("OUT:", string(out))
+		}
 	}
-	//reader := bufio.NewReader(os.Stdin)
-	//fmt.Print("\x1b[31m", "(#`-´)<ENTER PASSWORD!!!!! : ")
-	//pass, _ := reader.ReadString('\n')
+	return err
+}
 
-	//cmd := exec.Command(inputs[0])
-	//cmd.Stdin = strings.NewReader("ubuntu" + "\n")
+func SuDo(inputs []string) error {
+	if inputs[1] == "apt" {
+		inputs[1] = "apt-get"
+	}
+	cmd := exec.Command("sudo", inputs[1:]...)
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
 
-	//return cmd.Run()
+	out, err := cmd.Output()
+	if err != nil {
+		fmt.Println("Err", err)
+	} else {
+		if string(out) == "" {
+			fmt.Println("OUT:success")
+		} else {
+			fmt.Println("OUT:", string(out))
+		}
+	}
+	return err
 }
 
 func exe(input string) error {
@@ -46,7 +69,13 @@ func exe(input string) error {
 	}
 
 	if inputs[0] == "su" {
-		SuperUser(inputs)
+		err := SuperUser(inputs)
+		return err
+	}
+
+	if inputs[0] == "sudo" {
+		err := SuDo(inputs)
+		return err
 	}
 
 	if len(inputs) == 1 {
@@ -55,7 +84,7 @@ func exe(input string) error {
 		fmt.Println(string(result))
 		return err
 	} else {
-		cmd := exec.Command(inputs[0], inputs[1])
+		cmd := exec.Command(inputs[0], inputs[1:]...)
 		result, err := cmd.Output()
 		fmt.Println(string(result))
 		return err
@@ -80,6 +109,7 @@ func main() {
 		}
 		// Read the keyboad input.
 		input, err := reader.ReadString('\n')
+
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
